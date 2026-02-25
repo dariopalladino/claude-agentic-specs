@@ -1,0 +1,25 @@
+### HANDOFF EXAMPLE
+- Status: done
+- Summary: 
+  - Identified migration enum conflict root cause: `sa.Enum(..., create_type=False)` does not suppress PostgreSQL type DDL creation in SQLAlchemy 2.0.23.
+  - Updated migration to use PostgreSQL `ENUM` objects for `user_role` and `article_status`.
+  - Reused enum objects in `users.role` and `articles.status` columns to avoid duplicate `CREATE TYPE` statements.
+  - Preserved idempotent enum create/drop with `checkfirst=True` in upgrade/downgrade.
+- Files changed: 
+  - app/alembic/versions/001_initial_schema.py
+  - .spec/40_workspace/agent_data/PROPOSED_CHANGE.md
+  - .spec/40_workspace/agent_data/HANDOFF.md
+- Commands run: 
+  - `python3 - <<'PY' ...` (SQLAlchemy enum behavior check)
+  - `mypy .` (failed: command not found)
+  - `pytest -q` (failed: command not found)
+  - `PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m py_compile alembic/versions/001_initial_schema.py`
+- Evidence: 
+  - SQLAlchemy probe output: `create_type attr missing` for `sa.Enum(...)` object, indicating the keyword is ignored on generic enum.
+  - Syntax check command exited with code `0`.
+- Risks/edge cases: 
+  - Existing databases where migration already failed mid-run may retain partially created objects; rerun should now be safe because enum creation uses `checkfirst=True`.
+  - If custom schemas/search_path are used, enum visibility still follows PostgreSQL schema resolution.
+- Next steps: 
+  - Run Alembic upgrade against a fresh local DB to confirm the duplicate enum error is resolved.
+  - Install project dev tools (`mypy`, `pytest`) in the environment to run full DoD checks.

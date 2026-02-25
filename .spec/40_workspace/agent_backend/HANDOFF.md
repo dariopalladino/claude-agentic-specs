@@ -1,0 +1,40 @@
+### HANDOFF EXAMPLE
+- Status: needs_review
+- Summary:
+  - Fixed enum persistence mismatch between SQLAlchemy models and Alembic-created PostgreSQL enum literals.
+  - Updated `Article.status` and `User.role` model enum columns to persist enum `.value` (lowercase) instead of enum member names.
+  - Added regression assertions to verify ORM enum labels match migration literals for both article and user enums.
+  - Verified with PostgreSQL dialect SQL compilation that filters now emit `'approved'` / `'admin'` values.
+  - Validation commands were run; full test execution is blocked by missing local dependencies in this environment.
+- Files changed:
+  - `.spec/40_workspace/agent_backend/PROPOSED_CHANGE.md`
+  - `app/articles/models.py`
+  - `app/accounts/models.py`
+  - `app/tests/test_articles/test_article_service.py`
+  - `app/tests/test_accounts/test_user_service.py`
+  - `.spec/40_workspace/agent_backend/HANDOFF.md`
+- Commands run:
+  - `rg -n "APPROVED|article_status|ArticleStatus|status\\s*=\\s*" app`
+  - `cat .spec/00_global/*.md` (all required global directives read)
+  - `cat .spec/10_design/DB_SCHEMA.md`
+  - `cat .spec/10_design/DOMAIN_MODEL.md`
+  - `cat .spec/10_design/WORKFLOWS.md`
+  - `cat .spec/20_backlog/TASKS.md`
+  - `cd app && python3 - <<'PY' ... print(Article.__table__.c.status.type.enums) ... PY`
+  - `python3 -m mypy .`
+  - `python3 -m pytest -q`
+  - `cd app && python3 - <<'PY' ... compile(select(...), postgresql.dialect(), literal_binds=True) ... PY`
+- Evidence: paste key outputs (short)
+  - `Article.__table__.c.status.type.enums -> ['draft', 'pending_review', 'approved', 'rejected']`
+  - `User.__table__.c.role.type.enums -> ['author', 'admin']`
+  - Compiled SQL now includes:
+    - `WHERE articles.status = 'approved'`
+    - `WHERE users.role = 'admin'`
+  - `python3 -m pytest -q` failed in environment with `ModuleNotFoundError: No module named 'django'`.
+  - `python3 -m mypy .` reports many pre-existing repo errors unrelated to this patch and environment/type-check configuration issues.
+- Risks/edge cases:
+  - Environments using old ORM-created enum/check constraints may still have uppercase constraints and could need schema alignment/reset.
+  - Full runtime validation still pending due missing local test dependencies.
+- Next steps:
+  - Install project dependencies in the active interpreter (at least Django + test deps), then rerun `pytest -q`.
+  - Re-run type checks with the intended project Python/mypy configuration to evaluate only relevant deltas.

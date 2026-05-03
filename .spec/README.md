@@ -38,7 +38,7 @@ No AI agent can silently modify architecture.
   /10_design      ← Approved architecture & contracts
   /20_backlog     ← Tasks & epics
   /30_delivery    ← Promotion log & release notes
-  /40_agents      ← AI sandbox (agent proposals)
+   /40_workspace   ← AI workspace sandboxes (agent proposals and handoffs)
   /50_archive     ← Rejected proposals (optional)
 
 ---
@@ -62,7 +62,7 @@ Agents must never override higher layers.
 Each agent has:
 
 - A defined role (backend, frontend, architect, etc.)
-- A sandbox folder in /.spec/40_agents/
+- A workspace folder in `/.spec/40_workspace/agent_<role>/`
 - A strict execution protocol
 
 Agents:
@@ -88,7 +88,7 @@ When an agent proposes:
 It must:
 
 1. Draft proposal in:
-   /.spec/40_agents/<agent_name>/
+   `/.spec/40_workspace/agent_<role>/`
 
 2. Supervisor reviews
 
@@ -189,7 +189,7 @@ Security agent:
 
 All agents write notes in:
 
-/.spec/40_agents/<agent_name>/
+`/.spec/40_workspace/agent_<role>/`
 
 ---
 
@@ -239,6 +239,7 @@ Security checks must be server-side.
 Supervisor:
 - Governance gatekeeper
 - Promotion authority
+- Default orchestration entrypoint for non-trivial work
 
 Architect:
 - Define contracts & domain models
@@ -290,6 +291,13 @@ Rules:
 - Promotions logged before release
 
 This allows multiple AI agents to work simultaneously without chaos.
+
+Standard agent artifacts:
+
+- `CLARIFICATIONS.md`
+- `PROPOSED_CHANGES.md`
+- `HANDOFF.md`
+- `SECURITY_REVIEW.md`
 
 ---
 

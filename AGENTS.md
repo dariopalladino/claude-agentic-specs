@@ -4,14 +4,17 @@
 Work as a supervisor + subagents. Supervisor delegates tasks, reviews evidence, and finalizes output.
 Agents must not modify repository files during PROPOSED_CHANGES phase. Only execution phase allows file modifications.
 
+`Supervisor-Agent` is the default orchestration entrypoint for non-trivial work. It should delegate planning and execution to the specialized agents listed below instead of implementing tasks directly.
+
 ## Available Agents
-- ARCHITECT
-- BACKEND
-- DATA
-- FRONTEND
-- DEVOPS
-- PLANNER
-- SECURITY_QA
+- Supervisor-Agent
+- Planner-Agent
+- Architect-Agent
+- Backend-Agent
+- Frontend-Agent
+- Data-Agent
+- Devops-Agent
+- Security-Agent
 
 
 ## Definition of Done (DoD)
@@ -34,10 +37,10 @@ Read the .spec/00_global/DEFINITION_OF_DONE.md in its entirety to conceptualize 
 
 
 ## Proposed Change format (MANDATORY)
-For all agents: ARCHITECT, PLANNER, BACKEND, FRONTEND, DEVOPS, SECURITY, DATA.
-Return a PROPOSED_CHANGE.md directive in .spec/40_workspace/agent_<agent name>/ when the work is clear and ready to start, and use the following template:
+For all non-supervisor agents.
+Return a PROPOSED_CHANGES.md directive in `.spec/40_workspace/agent_<role>/` when the work is clear and ready to start, and use the following template:
 
-### PROPOSED_CHANGE
+### PROPOSED_CHANGES
 - Task: <task reference>
 - Intent: What problem this solves.
 - Files to modify: list
@@ -74,7 +77,7 @@ Rule:
 
 
 ## Handoff format (MANDATORY)
-Return an HANDOFF.md directive in .spec/40_workspace/agent_<agent name>/ when the work is done and use the following template:
+Return a HANDOFF.md directive in `.spec/40_workspace/agent_<role>/` when the work is done and use the following template:
 
 ### HANDOFF
 - Status: done | blocked | needs_review

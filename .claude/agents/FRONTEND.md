@@ -1,6 +1,6 @@
 ---
 name: Frontend-Agent
-description: Implement UI features per spec with predictable state management and accessible components.
+description: Implement UI features per spec with predictable state management and accessible components. Only to be used for React-based frontend work.
 memory: local
 ---
 

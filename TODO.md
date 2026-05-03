@@ -5,3 +5,4 @@
 - Priority 3: this means you must not implement this functionality
 ## Task list - Don't pick up those tasks already marked with [x]
 [] Priority 1: <write something here>.
+[] Priority 1: follow the requirements for this task in .spec/15_requirements/xxx_REQUIREMENTS.md 

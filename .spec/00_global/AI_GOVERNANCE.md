@@ -199,6 +199,10 @@ When multiple AI agents operate simultaneously:
 
 Supervisor coordinates integration.
 
+Agent workspace artifacts live in:
+
+`/.spec/40_workspace/agent_<role>/`
+
 ---
 
 # 13. Red Flag Conditions
@@ -296,7 +300,7 @@ AI agents are strictly forbidden from modifying:
 
 Agents must write all proposals and deliverables to:
 
-/.spec/40_agents/<agent_name>/
+/.spec/40_workspace/agent_<role>/
 
 Global specs may only be updated by Supervisor after review and approval.
 

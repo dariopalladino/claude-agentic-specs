@@ -1,197 +1,155 @@
 # Foundation
 
-This document defines **mandatory conventions** that must be followed when building the blog application backend.
+This document defines **mandatory conventions** for building any project in this repository.
 
 The goal is to ensure:
 
-* Consistent behavior across the application
-* Predictable error handling
-* Observability
-* Security compliance
-* Server-side rendered HTML for SEO
-* Long-term maintainability
+* Consistent architecture across backend, native, and web
+* Predictable quality gates for delivery
+* Security-first authentication patterns
+* Maintainable and testable codebases
 
-All implementation must comply with this specification.
+All implementation MUST comply with this specification.
 
 ---
 
-## 1. Framework Decision
+## 1. Scope
 
-**Django** is the chosen framework (not FastAPI).
+All new projects and major refactors MUST follow this stack split:
 
-Rationale:
-- Server-side rendered HTML ensures all SEO meta tags are in the initial HTML response
-- No need for a separate API layer + SPA hydration complexity
-- Simpler deployment (one service instead of two)
-- TailwindCSS works with Django templates
-- Auth0 integration is straightforward with Django
-- Python backend was already required
+* Backend: `backend/`
+* Native Android: `native/`
+* Web frontend: `web/`
+
+Technology substitutions are not allowed unless a separate approved design decision document explicitly overrides this file.
 
 ---
 
-## 2. Technology Baseline
+## 2. Mandatory Technology Baseline
 
-All services MUST use:
+### 2.1 Backend (`backend/`)
 
-* Python 3.11+
-* Django 5.x
-* SQLAlchemy 2.x (for database models and queries)
-* Alembic (for migrations)
-* Pydantic v2 (for validation/serialization)
-* Gunicorn + Uvicorn workers (production)
-* Authlib (for Auth0 OIDC integration)
-* TailwindCSS (for frontend styling)
-* Structured logging (JSON)
-* PostgreSQL
+The backend MUST use:
 
-Optional but recommended:
+* Python 3.12+
+* FastAPI + Starlette + Uvicorn
+* SQLAlchemy 2.x (async usage)
+* Alembic migrations
+* PostgreSQL with `asyncpg`
+* Auth0 JWT verification using `python-jose` + JWKS retrieval/validation
+* OpenAI SDK (async client usage)
+* Pytest + `pytest-asyncio` + `mypy`
 
-* django-extensions
-* whitenoise (static files in production)
+### 2.2 Native (`native/`)
 
----
+The Android app MUST use:
 
-## 3. Architecture Pattern
+* Kotlin 1.9
+* Jetpack Compose + Material3
+* Navigation Compose
+* Room + DataStore
+* WorkManager
+* Retrofit + OkHttp
+* Auth0 Android SDK
+* `MediaRecorder` / `MediaPlayer`
 
-Django is used for:
-- URL routing
-- Views (request handling)
-- Template rendering (SSR)
-- Session management
-- Middleware
+### 2.3 Web (`web/`)
 
-SQLAlchemy is used for:
-- Database model definitions (source of truth)
-- Database queries via sessions
-- Relationship definitions
+The web app MUST use:
 
-Alembic is used for:
-- All schema migrations
-
-Pydantic is used for:
-- Form validation
-- Data serialization
-- Request/response contracts
-
-Django ORM is NOT used. All database access goes through SQLAlchemy sessions.
+* React 19 + TypeScript
+* Vite 6
+* Auth0 React SDK
+* Tailwind via CDN loaded in `index.html`
+* Gemini SDK `@google/genai` in the current implementation
 
 ---
 
-## 4. Required Project Structure
+## 3. Architecture Patterns
+
+### 3.1 Backend Architecture
+
+Use the layered flow:
 
 ```
-blog/
-  app/
-    manage.py
-    requirements.txt
-    Dockerfile
-    k8s/
-      deployment.yaml
-      service.yaml
-      ingress.yaml
-      configmap.yaml
-    alembic/
-      alembic.ini
-      env.py
-      versions/
-    config/
-      __init__.py
-      settings.py
-      urls.py
-      wsgi.py
-    accounts/
-      __init__.py
-      models.py          # SQLAlchemy User model
-      auth0_backend.py   # Auth0 authentication backend
-      middleware.py       # Session middleware for user details
-      views.py           # Login/logout/callback views
-      urls.py
-      services.py        # Business logic for user operations
-      schemas.py         # Pydantic schemas for user data
-    articles/
-      __init__.py
-      models.py          # SQLAlchemy Article, Category, Tag models with SEO fields
-      views.py           # CRUD views with role-based logic
-      forms.py           # Django forms backed by Pydantic validation
-      services.py        # Business logic for article operations
-      schemas.py         # Pydantic schemas for article data
-      urls.py
-    core/
-      __init__.py
-      db.py              # SQLAlchemy engine, session factory
-      base_model.py      # Base SQLAlchemy model with audit fields
-      exceptions.py      # Domain exceptions
-      logging.py         # Structured logging setup
-    templates/
-      base.html          # Base template with TailwindCSS + SEO meta
-      home.html
-      accounts/
-        login.html
-        dashboard.html
-      articles/
-        list.html
-        detail.html
-        create.html
-        edit.html
-        admin_review.html
-    static/
-      css/
-        input.css        # TailwindCSS input
-      js/
-    tests/
-      __init__.py
-      conftest.py
-      test_accounts/
-      test_articles/
+FastAPI Routers -> Services -> Repositories -> SQLAlchemy Async Session -> PostgreSQL
 ```
+
+Rules:
+
+* Business logic MUST live in service layer
+* Routers MUST handle transport concerns only (request parsing, response mapping, auth dependency wiring)
+* Repositories MUST encapsulate persistence concerns
+* All DB access MUST be async via SQLAlchemy 2 and `asyncpg`
+* Schema changes MUST go through Alembic
+* Backend API behavior MUST be JSON-based and client-agnostic (React web and Kotlin native)
+
+### 3.2 Native Architecture
+
+Use MVVM with Compose-first UI:
+
+```
+Compose UI -> ViewModel -> Use Cases/Repositories -> Room/DataStore/Network
+```
+
+Rules:
+
+* UI state MUST be unidirectional
+* Long-running/background work MUST use WorkManager
+* API access MUST use Retrofit + OkHttp
+* Local persistence MUST use Room and DataStore for preferences/settings
+
+### 3.3 Web Architecture
+
+Use component-driven React architecture:
+
+```
+React Components -> Feature Hooks/Services -> API Clients
+```
+
+Rules:
+
+* TypeScript types MUST be used for API contracts and component props
+* Auth flows MUST use Auth0 React SDK
+* Tailwind usage MUST rely on CDN setup in `index.html`
+* Gemini integration MUST use `@google/genai`
 
 ---
 
-## 5. Layered Architecture
+## 4. Security and Authentication Baseline
 
-```
-Django Views (presentation) -> Services (business logic) -> Repositories/SQLAlchemy (data access)
-```
-
-Business rules must not live in:
-- Views/URL handlers
-- Templates
-- Migration scripts
-
-Views handle:
-- Request parsing
-- Authentication/authorization checks
-- Delegating to services
-- Rendering templates
-
-Services handle:
-- Business logic
-- Validation via Pydantic
-- Orchestrating repository calls
-
-Data access:
-- SQLAlchemy sessions and queries
-- No raw SQL unless justified
+* Backend authentication MUST validate Auth0-issued JWTs using JWKS-based key resolution
+* Token validation MUST verify issuer, audience, expiration, and signature
+* Backend authorization MUST follow RBAC with minimum baseline roles `user` and `admin`
+* Authenticated identities MUST resolve to an internal user row using (`provider`, `provider_sub`)
+* Domain ownership/audit foreign keys MUST reference internal user IDs, never external `sub` values
+* Web and Native clients MUST obtain tokens through Auth0 SDKs (no custom auth implementation)
+* Secrets MUST NOT be hardcoded; load from environment or secure platform configuration
+* Authorization decisions MUST be deny-by-default
 
 ---
 
-## 6. SEO Requirements
+## 5. Quality Gates
 
-Every article page MUST render in the initial HTML:
-- meta title
-- meta description
-- canonical URL
-- Open Graph tags (og:title, og:description, og:image, og:url, og:type)
-- JSON-LD structured data (Article schema)
+Backend changes are not complete unless all of the following pass:
 
-The base template must include a block for SEO meta tags that child templates override.
+* `pytest`
+* async tests via `pytest-asyncio`
+* static typing checks via `mypy`
+
+Native and web modules SHOULD define equivalent automated checks in their own toolchains, but backend gates above are mandatory for `backend/`.
 
 ---
 
-## 7. Session Management
+## 6. Reference Layout
 
-Auth0 integration uses backend-for-frontend pattern:
-- On successful Auth0 callback, user details are stored in Django session
-- Session contains: user_id, email, name, role, auth0_sub
-- Subsequent requests read from session (no DB query per request)
-- Session cookie is httpOnly, secure, SameSite=Lax
+Minimum expected top-level workspace structure:
+
+```
+project-root/
+  backend/
+  native/
+  web/
+```
+
+Each module may evolve internally, but MUST preserve the technology constraints in this document.
